@@ -6,6 +6,7 @@ from opencameracontrol.camera import (
     DEFAULT_VIDEO_PREFIX,
     _load_model_data,
     _normalize_model_name,
+    _resolve_model,
 )
 
 
@@ -72,7 +73,7 @@ class TestLoadModelData:
         assert result["video"]["iso"] == "movieiso"
         assert result["video"]["aperture"] == "movief-number"
         assert result["video"]["shutterspeed"] == "movieshutterspeed"
-        assert result["video"]["whitebalance"] == "whitebalance"
+        assert result["video"]["whitebalance"] == "d23a"
 
     def test_bundled_model_with_video_widgets_false(self):
         result = _load_model_data("Fuji Fujifilm X-Pro3")
@@ -152,3 +153,39 @@ class TestLoadModelData:
         result = _load_model_data("Fuji Fujifilm X-Pro3")
         for key in ("iso", "aperture", "shutterspeed", "whitebalance"):
             assert result["video"][key] == result["photo"][key]
+
+
+class TestValueMap:
+    def test_no_value_map_returns_empty(self):
+        raw = {"model": "Test"}
+        result = _resolve_model(raw)
+        assert result.get("value_map", {}) == {}
+
+    def test_value_map_preserved(self):
+        raw = {
+            "model": "Test",
+            "value_map": {
+                "d23a": {
+                    "2": "Automatic",
+                    "4": "Daylight",
+                }
+            },
+        }
+        result = _resolve_model(raw)
+        assert result["value_map"]["d23a"]["4"] == "Daylight"
+
+    def test_nikon_bundled_has_value_map(self):
+        result = _load_model_data("Nikon DSC D780")
+        assert "value_map" in result
+        assert "d23a" in result["value_map"]
+        vmap = result["value_map"]["d23a"]
+        assert vmap["4"] == "Daylight"
+        assert vmap["6"] == "Tungsten"
+
+    def test_value_map_not_required(self):
+        result = _load_model_data("Fuji Fujifilm X-Pro3")
+        assert result.get("value_map", {}) == {}
+
+    def test_video_widget_override_with_value_map(self):
+        result = _load_model_data("Nikon DSC D780")
+        assert result["video"]["whitebalance"] == "d23a"

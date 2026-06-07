@@ -3,5 +3,23 @@
     "video_widgets": true,
     "photo": {
         "shutterspeed": "shutterspeed2"
+    },
+    "video": {
+        "whitebalance": "d23a"
+    },
+    "value_map": {
+        "d23a": {
+            "2": "Automatic",
+            "4": "Daylight",
+            "5": "Fluorescent",
+            "6": "Tungsten",
+            "7": "Flash",
+            "32784": "Cloudy",
+            "32785": "Shade",
+            "32786": "Color Temperature",
+            "32787": "Preset",
+            "32789": "Natural Light Auto",
+            "32790": "Flash"
+        }
     }
 }

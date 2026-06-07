@@ -56,12 +56,14 @@ def _build_video_defaults():
 
 
 def _resolve_model(raw_data):
+    value_map = raw_data.get("value_map", {})
+
     if "settings" in raw_data:
         settings = raw_data["settings"]
-        return {"photo": dict(settings), "video": dict(settings)}
+        return {"photo": dict(settings), "video": dict(settings), "value_map": value_map}
 
-    if "photo" in raw_data and "video" in raw_data:
-        return {"photo": raw_data["photo"], "video": raw_data["video"]}
+    if "photo" in raw_data and "video" in raw_data and not raw_data.get("video_widgets", False):
+        return {"photo": raw_data["photo"], "video": raw_data["video"], "value_map": value_map}
 
     photo_overrides = raw_data.get("photo", {})
     photo = {**DEFAULT_PHOTO_SETTINGS, **photo_overrides}
@@ -74,7 +76,7 @@ def _resolve_model(raw_data):
     else:
         video = dict(photo)
 
-    return {"photo": photo, "video": video}
+    return {"photo": photo, "video": video, "value_map": value_map}
 
 
 def _load_model_data(model_name, config_dir=None):
@@ -149,6 +151,7 @@ def _camera_worker(req_q, resp_q, port, config_dir):
         return
 
     config = camera.get_config()
+    value_map = model_data.get("value_map", {})
     resp_q.put(("ok", model_name))
 
     def get_widget(setting_name, mode):
@@ -160,6 +163,29 @@ def _camera_worker(req_q, resp_q, port, config_dir):
             return None
         return _find_child(config, widget_name)
 
+    def get_widget_vmap(setting_name, mode):
+        settings = model_data.get(mode.lower())
+        if not settings:
+            return None, None
+        widget_name = settings.get(setting_name)
+        if not widget_name:
+            return None, None
+        widget = _find_child(config, widget_name)
+        vmap = value_map.get(widget_name)
+        return widget, vmap
+
+    def translate_to_display(raw_value, vmap):
+        if vmap:
+            return vmap.get(str(raw_value), raw_value)
+        return raw_value
+
+    def translate_to_raw(display_value, vmap):
+        if vmap:
+            for raw, display in vmap.items():
+                if display == display_value:
+                    return raw
+        return display_value
+
     while True:
         try:
             cmd = req_q.get()
@@ -169,22 +195,25 @@ def _camera_worker(req_q, resp_q, port, config_dir):
         action = cmd[0]
         try:
             if action == "get_choices":
-                widget = get_widget(cmd[1], cmd[2])
+                widget, vmap = get_widget_vmap(cmd[1], cmd[2])
                 if widget is None:
                     resp_q.put(("ok", []))
                     continue
                 try:
-                    choices = [widget.get_choice(i) for i in range(widget.count_choices())]
+                    choices = [
+                        translate_to_display(widget.get_choice(i), vmap)
+                        for i in range(widget.count_choices())
+                    ]
                 except gp.GPhoto2Error:
                     choices = []
                 resp_q.put(("ok", choices))
 
             elif action == "get_value":
-                widget = get_widget(cmd[1], cmd[2])
+                widget, vmap = get_widget_vmap(cmd[1], cmd[2])
                 if widget is None:
                     resp_q.put(("error", f"Widget not found for {cmd[1]}"))
                     continue
-                resp_q.put(("ok", widget.get_value()))
+                resp_q.put(("ok", translate_to_display(widget.get_value(), vmap)))
 
             elif action == "is_readonly":
                 widget = get_widget(cmd[1], cmd[2])
@@ -197,7 +226,7 @@ def _camera_worker(req_q, resp_q, port, config_dir):
 
             elif action == "set_value":
                 setting_name, value, mode = cmd[1], cmd[2], cmd[3]
-                widget = get_widget(setting_name, mode)
+                widget, vmap = get_widget_vmap(setting_name, mode)
                 if widget is None:
                     resp_q.put(("error", f"Unknown setting: {setting_name}"))
                 elif widget.get_readonly():
@@ -208,7 +237,7 @@ def _camera_worker(req_q, resp_q, port, config_dir):
                         )
                     )
                 else:
-                    widget.set_value(value)
+                    widget.set_value(translate_to_raw(value, vmap))
                     resp_q.put(("ok", None))
 
             elif action == "apply":
