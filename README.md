@@ -2,7 +2,7 @@
 
 [![pip](https://img.shields.io/badge/pip-0.1.0-blue.svg)](https://pypi.org/project/open-camera-control/)
 [![CI](https://github.com/jcubic/open-camera-control/actions/workflows/ci.yml/badge.svg)](https://github.com/jcubic/open-camera-control/actions/workflows/ci.yml)
-[![open-camera-control GitHub repo](https://img.shields.io/badge/github-open-camera-control-orange?logo=github)](https://github.com/jcubic/open-camera-control)
+[![open-camera-control GitHub repo](https://img.shields.io/badge/github-open--camera--control-orange?logo=github)](https://github.com/jcubic/open-camera-control)
 [![LICENSE GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/jcubic/open-camera-control/blob/master/LICENSE)
 
 A GTK application to control camera settings (ISO, aperture, shutter speed, white balance) via gphoto2. Keeps a persistent USB session so changing settings doesn't interrupt the camera's live view.
