@@ -101,6 +101,7 @@ Different camera models expose different gphoto2 widget names for the same setti
 
 - Nikon D780
 - Fuji Fujifilm X-Pro3
+- Sony RX10 IV
 
 ### Using an unsupported camera
 
