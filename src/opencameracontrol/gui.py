@@ -1,9 +1,10 @@
 import os
+import threading
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, GLib, Gtk
 
 from opencameracontrol.camera import CameraBackend, CameraError, detect_cameras
 from opencameracontrol.settings import SettingChoices
@@ -26,6 +27,23 @@ CSS = b"""
 .connect-btn.disconnecting:hover {
     background-color: #ef2929;
     border-color: #cc0000;
+}
+.connect-progress progress {
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.15),
+        rgba(255,255,255,0.15) 10px,
+        transparent 10px,
+        transparent 20px
+    );
+    background-color: #4e9a06;
+    border-radius: 0;
+    min-height: 4px;
+}
+.connect-progress trough {
+    min-height: 4px;
+    background-color: #d3d7cf;
+    border-radius: 0;
 }
 """
 
@@ -230,6 +248,7 @@ class CameraControlWindow(Gtk.Window):
         self._config = config
         self._tabs = {}
         self._cameras = []
+        self._pulse_timer = None
 
         self.connect("destroy", self._on_destroy)
 
@@ -246,6 +265,11 @@ class CameraControlWindow(Gtk.Window):
 
         toolbar = self._build_toolbar()
         vbox.pack_start(toolbar, False, False, 0)
+
+        self._progress = Gtk.ProgressBar()
+        self._progress.get_style_context().add_class("connect-progress")
+        self._progress.set_no_show_all(True)
+        vbox.pack_start(self._progress, False, False, 0)
 
         sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         vbox.pack_start(sep, False, False, 0)
@@ -315,19 +339,40 @@ class CameraControlWindow(Gtk.Window):
             return
 
         _name, port = self._cameras[idx]
+
+        self._connect_btn.set_label("Connecting…")
+        self._connect_btn.set_sensitive(False)
+        self._camera_combo.set_sensitive(False)
+        self._start_pulse()
+
+        thread = threading.Thread(
+            target=self._connect_worker, args=(port,), daemon=True
+        )
+        thread.start()
+
+    def _connect_worker(self, port):
         try:
             self._camera.connect(port=port)
+            GLib.idle_add(self._on_connected)
         except CameraError as e:
-            self._show_error(str(e))
-            return
+            GLib.idle_add(self._on_connect_error, str(e))
 
+    def _on_connected(self):
+        self._stop_pulse()
         self._connect_btn.set_label("Disconnect")
         self._connect_btn.get_style_context().add_class("disconnecting")
-        self._camera_combo.set_sensitive(False)
+        self._connect_btn.set_sensitive(True)
 
         self._build_tabs()
         self._notebook.set_sensitive(True)
         self._notebook.show_all()
+
+    def _on_connect_error(self, message):
+        self._stop_pulse()
+        self._connect_btn.set_label("Connect")
+        self._connect_btn.set_sensitive(True)
+        self._camera_combo.set_sensitive(True)
+        self._show_error(message)
 
     def _disconnect(self):
         self._camera.release()
@@ -446,6 +491,21 @@ class CameraControlWindow(Gtk.Window):
 
         if errors:
             self._show_error("\n".join(errors))
+
+    def _start_pulse(self):
+        self._progress.show()
+        self._pulse_timer = GLib.timeout_add(80, self._pulse_tick)
+
+    def _pulse_tick(self):
+        self._progress.pulse()
+        return True
+
+    def _stop_pulse(self):
+        if self._pulse_timer is not None:
+            GLib.source_remove(self._pulse_timer)
+            self._pulse_timer = None
+        self._progress.set_fraction(0)
+        self._progress.hide()
 
     def _on_destroy(self, _widget):
         self._camera.release()
