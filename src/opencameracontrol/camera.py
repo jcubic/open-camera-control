@@ -115,6 +115,7 @@ def _find_child(widget, name):
 
 
 def _camera_worker(req_q, resp_q, port, config_dir):
+    os.environ["LC_ALL"] = "C"
     camera = gp.Camera()
     if port:
         port_info_list = gp.PortInfoList()

@@ -4,7 +4,13 @@ import tempfile
 
 import pytest
 
-from opencameracontrol.config import DEFAULT_CONFIG, load_config
+from opencameracontrol.config import (
+    DEFAULT_CONFIG,
+    WB_KELVIN,
+    find_closest_wb,
+    load_config,
+    lookup_wb_kelvin,
+)
 
 
 @pytest.fixture
@@ -94,3 +100,120 @@ class TestPresetLookup:
     def test_preset_names_are_strings(self):
         for name in DEFAULT_CONFIG["white_balance_presets"]:
             assert isinstance(name, str)
+
+
+class TestWBKelvin:
+    def test_all_values_are_ints(self):
+        for name, kelvin in WB_KELVIN.items():
+            assert isinstance(kelvin, int), f"{name} should map to an int"
+
+    def test_all_keys_are_strings(self):
+        for name in WB_KELVIN:
+            assert isinstance(name, str)
+
+    def test_standard_modes_present(self):
+        standard = ["Daylight", "Cloudy", "Shade", "Tungsten", "Flash", "Fluorescent"]
+        for name in standard:
+            assert name in WB_KELVIN, f"{name} should be in WB_KELVIN"
+
+    def test_standard_values(self):
+        assert WB_KELVIN["Daylight"] == 5600
+        assert WB_KELVIN["Cloudy"] == 6500
+        assert WB_KELVIN["Shade"] == 7500
+        assert WB_KELVIN["Tungsten"] == 3200
+        assert WB_KELVIN["Flash"] == 5400
+        assert WB_KELVIN["Fluorescent"] == 4000
+
+    def test_fluorescent_variants_present(self):
+        variants = [
+            "Fluorescent Lamp 1",
+            "Fluorescent Lamp 2",
+            "Fluorescent Lamp 3",
+            "Fluorescent Lamp 4",
+            "Fluorescent Lamp 5",
+            "Fluorescent H",
+            "Fluorescent: Cold White",
+            "Fluorescent: Day White",
+            "Fluorescent: Daylight",
+            "Fluorescent: Tungsten",
+            "Fluorescent: Warm White",
+            "Fluorescent: White",
+        ]
+        for name in variants:
+            assert name in WB_KELVIN, f"{name} should be in WB_KELVIN"
+
+    def test_fluorescent_lamp_ordering(self):
+        assert WB_KELVIN["Fluorescent Lamp 1"] < WB_KELVIN["Fluorescent Lamp 5"]
+
+    def test_special_modes_present(self):
+        assert "Underwater" in WB_KELVIN
+        assert "Tungsten 2" in WB_KELVIN
+
+    def test_values_in_valid_range(self):
+        for name, kelvin in WB_KELVIN.items():
+            assert 1500 <= kelvin <= 10000, f"{name}: {kelvin}K out of range"
+
+
+class TestLookupWBKelvin:
+    def test_exact_match(self):
+        assert lookup_wb_kelvin("Daylight") == 5600
+
+    def test_case_insensitive_match(self):
+        assert lookup_wb_kelvin("daylight") == 5600
+        assert lookup_wb_kelvin("CLOUDY") == 6500
+
+    def test_user_presets_override(self):
+        assert lookup_wb_kelvin("Daylight", {"Daylight": 5500}) == 5500
+
+    def test_user_presets_add_new(self):
+        assert lookup_wb_kelvin("My Custom", {"My Custom": 4200}) == 4200
+
+    def test_unknown_returns_none(self):
+        assert lookup_wb_kelvin("Something Unknown") is None
+
+    def test_auto_returns_none(self):
+        assert lookup_wb_kelvin("Auto") is None
+
+    def test_custom_preset_returns_none(self):
+        assert lookup_wb_kelvin("Preset Custom 1") is None
+
+    def test_user_presets_case_insensitive(self):
+        assert lookup_wb_kelvin("my preset", {"My Preset": 3800}) == 3800
+
+
+class TestFindClosestWB:
+    def test_exact_match(self):
+        choices = ["Auto", "Daylight", "Cloudy", "Shade", "Tungsten"]
+        assert find_closest_wb(5600, choices) == "Daylight"
+
+    def test_closest_lower(self):
+        choices = ["Auto", "Daylight", "Cloudy", "Tungsten"]
+        assert find_closest_wb(3000, choices) == "Tungsten"
+
+    def test_closest_higher(self):
+        choices = ["Auto", "Daylight", "Cloudy", "Tungsten"]
+        assert find_closest_wb(8000, choices) == "Cloudy"
+
+    def test_midpoint_picks_one(self):
+        choices = ["Daylight", "Flash"]
+        result = find_closest_wb(5500, choices)
+        assert result in ("Daylight", "Flash")
+
+    def test_skips_unmapped_choices(self):
+        choices = ["Auto", "Preset Custom 1", "Daylight"]
+        assert find_closest_wb(5600, choices) == "Daylight"
+
+    def test_all_unmapped_returns_none(self):
+        choices = ["Auto", "Preset Custom 1"]
+        assert find_closest_wb(5600, choices) is None
+
+    def test_empty_choices_returns_none(self):
+        assert find_closest_wb(5600, []) is None
+
+    def test_user_presets_used(self):
+        choices = ["Auto", "My Mode"]
+        assert find_closest_wb(4100, choices, {"My Mode": 4000}) == "My Mode"
+
+    def test_single_mapped_choice(self):
+        choices = ["Auto", "Tungsten"]
+        assert find_closest_wb(9000, choices) == "Tungsten"

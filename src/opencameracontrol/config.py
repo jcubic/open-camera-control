@@ -37,6 +37,68 @@ DEFAULT_CONFIG = {
 
 CONFIG_DIR = os.path.expanduser("~/.open-camera-control")
 
+WB_KELVIN = {
+    "Daylight": 5600,
+    "Direct Sunlight": 5600,
+    "Cloudy": 6500,
+    "Shade": 7500,
+    "Tungsten": 3200,
+    "Tungsten 2": 3200,
+    "Flash": 5400,
+    "Standard Flash": 5400,
+    "Fluorescent": 4000,
+    "Fluorescent Lamp 1": 2700,
+    "Fluorescent Lamp 2": 3000,
+    "Fluorescent Lamp 3": 3700,
+    "Fluorescent Lamp 4": 4200,
+    "Fluorescent Lamp 5": 5000,
+    "Fluorescent H": 3700,
+    "Fluorescent: Cold White": 4200,
+    "Fluorescent: Day White": 5000,
+    "Fluorescent: Daylight": 6500,
+    "Fluorescent: Tungsten": 3000,
+    "Fluorescent: Warm White": 3000,
+    "Fluorescent: White": 3700,
+    "Underwater": 5000,
+    "Natural Light Auto": 5500,
+    "Automatic Cool": 5000,
+    "Automatic Warm": 6000,
+}
+
+
+def lookup_wb_kelvin(name, user_presets=None):
+    if user_presets:
+        if name in user_presets:
+            return user_presets[name]
+        name_lower = name.lower()
+        for preset_name, kelvin in user_presets.items():
+            if preset_name.lower() == name_lower:
+                return kelvin
+
+    if name in WB_KELVIN:
+        return WB_KELVIN[name]
+
+    name_lower = name.lower()
+    for wb_name, kelvin in WB_KELVIN.items():
+        if wb_name.lower() == name_lower:
+            return kelvin
+
+    return None
+
+
+def find_closest_wb(kelvin, choices, user_presets=None):
+    best_name = None
+    best_diff = None
+    for name in choices:
+        k = lookup_wb_kelvin(name, user_presets)
+        if k is None:
+            continue
+        diff = abs(k - kelvin)
+        if best_diff is None or diff < best_diff:
+            best_diff = diff
+            best_name = name
+    return best_name
+
 
 def load_config(config_dir=None):
     if config_dir is None:

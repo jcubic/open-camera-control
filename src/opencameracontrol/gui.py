@@ -24,6 +24,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gtk
 
 from opencameracontrol.camera import CameraBackend, CameraError, detect_cameras
+from opencameracontrol.config import find_closest_wb, lookup_wb_kelvin
 from opencameracontrol.settings import SettingChoices
 
 CSS = b"""
@@ -214,20 +215,25 @@ class WhiteBalanceRow(Gtk.Box):
             idx = self._preset_names.index(mode_name)
             self._updating = True
             self._combo.set_active(idx)
-            if mode_name in self._presets:
-                kelvin = self._presets[mode_name]
+            kelvin = self._lookup_kelvin(mode_name)
+            if kelvin is not None:
                 self._scale.set_value(kelvin)
                 self._entry.set_text(str(kelvin))
             self._initial_preset = mode_name
             self._initial_kelvin = self.get_kelvin()
             self._updating = False
 
+    def _lookup_kelvin(self, name):
+        return lookup_wb_kelvin(name, self._presets)
+
     def _on_combo_changed(self, combo):
         if self._updating:
             return
         name = combo.get_active_text()
-        if name and name in self._presets:
-            kelvin = self._presets[name]
+        if not name:
+            return
+        kelvin = self._lookup_kelvin(name)
+        if kelvin is not None:
             self._updating = True
             self._scale.set_value(kelvin)
             self._entry.set_text(str(kelvin))
@@ -239,7 +245,9 @@ class WhiteBalanceRow(Gtk.Box):
         kelvin = int(scale.get_value())
         self._updating = True
         self._entry.set_text(str(kelvin))
-        self._combo.set_active(0)
+        closest = find_closest_wb(kelvin, self._preset_names, self._presets)
+        if closest and closest in self._preset_names:
+            self._combo.set_active(self._preset_names.index(closest))
         self._updating = False
 
     def _on_entry_activate(self, entry):
@@ -252,7 +260,9 @@ class WhiteBalanceRow(Gtk.Box):
         self._updating = True
         self._scale.set_value(kelvin)
         self._entry.set_text(str(kelvin))
-        self._combo.set_active(0)
+        closest = find_closest_wb(kelvin, self._preset_names, self._presets)
+        if closest and closest in self._preset_names:
+            self._combo.set_active(self._preset_names.index(closest))
         self._updating = False
 
 
