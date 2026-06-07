@@ -180,4 +180,6 @@ The app uses [python-gphoto2](https://github.com/jim-easterbrook/python-gphoto2)
 
 Copyright (c) 2026 [Jakub T. Jankiewicz](https://jakub.jankiewicz.org/)
 
-Released under the MIT License. See [LICENSE](https://github.com/jcubic/open-camera-control/blob/master/LICENSE) for details.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+See [LICENSE](https://github.com/jcubic/open-camera-control/blob/master/LICENSE) for details.

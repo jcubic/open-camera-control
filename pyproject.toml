@@ -7,7 +7,7 @@ name = "open-camera-control"
 version = "0.1.0"
 description = "GTK application to control camera settings via gphoto2"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.10"
 authors = [
     {name = "Jakub T. Jankiewicz", email = "jcubic@jcubic.pl"},
