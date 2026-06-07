@@ -416,9 +416,9 @@ class CameraControlWindow(Gtk.Window):
 
         rows = {}
         settings = [
-            ("ISO", "iso"),
             ("Aperture", "aperture"),
             ("Shutter Speed", "shutterspeed"),
+            ("ISO", "iso"),
         ]
 
         for label, setting_name in settings:
