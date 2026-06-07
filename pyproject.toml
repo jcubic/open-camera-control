@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-camera-control"
+version = "0.1.0"
+description = "GTK application to control camera settings via gphoto2"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    {name = "Jakub T. Jankiewicz", email = "jcubic@jcubic.pl"},
+]
+keywords = ["camera", "gphoto2", "gtk", "photography", "nikon", "remote-control"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: GTK",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: Capture :: Digital Camera",
+]
+dependencies = [
+    "gphoto2",
+    "PyGObject",
+]
+
+[project.urls]
+Homepage = "https://github.com/jcubic/open-camera-control"
+Repository = "https://github.com/jcubic/open-camera-control"
+Issues = "https://github.com/jcubic/open-camera-control/issues"
+
+[project.scripts]
+camera-control = "opencameracontrol.main:main"
+camera-control-detect = "opencameracontrol.detect:main"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+"src/opencameracontrol/gui.py" = ["E402"]
+"src/opencameracontrol/main.py" = ["E402"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+opencameracontrol = ["models/*.json"]
