@@ -7,6 +7,8 @@
 
 A GTK application to control camera settings (ISO, aperture, shutter speed, white balance) via gphoto2. Keeps a persistent USB session so changing settings doesn't interrupt the camera's live view.
 
+![open-camera-control GUI](https://github.com/jcubic/open-camera-control/blob/master/.github/screenshot.png?raw=true)
+
 ## Requirements
 
 - Python 3.10+
