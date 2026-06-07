@@ -202,8 +202,7 @@ class WhiteBalanceRow(Gtk.Box):
 
     def is_changed(self):
         return (
-            self.get_wb_value() != self._initial_preset
-            or self.get_kelvin() != self._initial_kelvin
+            self.get_wb_value() != self._initial_preset or self.get_kelvin() != self._initial_kelvin
         )
 
     def mark_applied(self):
@@ -309,9 +308,7 @@ class CameraControlWindow(Gtk.Window):
         hbox.pack_start(self._camera_combo, True, True, 0)
 
         refresh_btn = Gtk.Button()
-        refresh_icon = Gtk.Image.new_from_icon_name(
-            "view-refresh-symbolic", Gtk.IconSize.BUTTON
-        )
+        refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
         refresh_btn.set_image(refresh_icon)
         refresh_btn.set_tooltip_text("Refresh camera list")
         refresh_btn.connect("clicked", self._on_refresh)
@@ -362,9 +359,7 @@ class CameraControlWindow(Gtk.Window):
         self._camera_combo.set_sensitive(False)
         self._start_pulse()
 
-        thread = threading.Thread(
-            target=self._connect_worker, args=(port,), daemon=True
-        )
+        thread = threading.Thread(target=self._connect_worker, args=(port,), daemon=True)
         thread.start()
 
     def _connect_worker(self, port):

@@ -131,15 +131,17 @@ def _camera_worker(req_q, resp_q, port, config_dir):
     model_data = _load_model_data(model_name, config_dir)
     if model_data is None:
         normalized = _normalize_model_name(model_name)
-        resp_q.put((
-            "error",
-            f"No widget mapping found for camera model '{model_name}'.\n"
-            f"Run: camera-control-detect\n"
-            f"Then copy the output to:\n"
-            f"  src/opencameracontrol/models/{normalized}.json (to contribute)\n"
-            f"  OR ~/.open-camera-control/config.json under "
-            f'"models"."{model_name}" (for personal use)',
-        ))
+        resp_q.put(
+            (
+                "error",
+                f"No widget mapping found for camera model '{model_name}'.\n"
+                f"Run: camera-control-detect\n"
+                f"Then copy the output to:\n"
+                f"  src/opencameracontrol/models/{normalized}.json (to contribute)\n"
+                f"  OR ~/.open-camera-control/config.json under "
+                f'"models"."{model_name}" (for personal use)',
+            )
+        )
         return
 
     config = camera.get_config()
@@ -168,9 +170,7 @@ def _camera_worker(req_q, resp_q, port, config_dir):
                     resp_q.put(("ok", []))
                     continue
                 try:
-                    choices = [
-                        widget.get_choice(i) for i in range(widget.count_choices())
-                    ]
+                    choices = [widget.get_choice(i) for i in range(widget.count_choices())]
                 except gp.GPhoto2Error:
                     choices = []
                 resp_q.put(("ok", choices))
@@ -184,10 +184,12 @@ def _camera_worker(req_q, resp_q, port, config_dir):
 
             elif action == "is_readonly":
                 widget = get_widget(cmd[1], cmd[2])
-                resp_q.put((
-                    "ok",
-                    True if widget is None else bool(widget.get_readonly()),
-                ))
+                resp_q.put(
+                    (
+                        "ok",
+                        True if widget is None else bool(widget.get_readonly()),
+                    )
+                )
 
             elif action == "set_value":
                 setting_name, value, mode = cmd[1], cmd[2], cmd[3]
@@ -195,10 +197,12 @@ def _camera_worker(req_q, resp_q, port, config_dir):
                 if widget is None:
                     resp_q.put(("error", f"Unknown setting: {setting_name}"))
                 elif widget.get_readonly():
-                    resp_q.put((
-                        "error",
-                        f"{setting_name} is read-only in {mode} mode",
-                    ))
+                    resp_q.put(
+                        (
+                            "error",
+                            f"{setting_name} is read-only in {mode} mode",
+                        )
+                    )
                 else:
                     widget.set_value(value)
                     resp_q.put(("ok", None))
