@@ -24,7 +24,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gtk
 
 from opencameracontrol.camera import CameraBackend, CameraError, detect_cameras
-from opencameracontrol.config import find_closest_wb, lookup_wb_kelvin
+from opencameracontrol.config import find_color_temp_choice, lookup_wb_kelvin
 from opencameracontrol.settings import SettingChoices
 
 CSS = b"""
@@ -161,6 +161,14 @@ class WhiteBalanceRow(Gtk.Box):
             self._preset_names = list(camera_choices)
         else:
             self._preset_names = list(presets.keys())
+        native = find_color_temp_choice(self._preset_names)
+        if native:
+            self._color_temp_choice = native
+            self._color_temp_native = True
+        else:
+            self._color_temp_choice = "Color Temperature"
+            self._preset_names.append(self._color_temp_choice)
+            self._color_temp_native = False
         for name in self._preset_names:
             self._combo.append_text(name)
         self._combo.set_active(0)
@@ -196,7 +204,23 @@ class WhiteBalanceRow(Gtk.Box):
         self.set_margin_bottom(8)
 
     def get_wb_value(self):
-        return self._combo.get_active_text()
+        value = self._combo.get_active_text()
+        if not self._color_temp_native and value == self._color_temp_choice:
+            kelvin = self.get_kelvin()
+            closest = None
+            best_diff = None
+            for name in self._preset_names:
+                if name == self._color_temp_choice:
+                    continue
+                k = lookup_wb_kelvin(name, self._presets)
+                if k is None:
+                    continue
+                diff = abs(k - kelvin)
+                if best_diff is None or diff < best_diff:
+                    best_diff = diff
+                    closest = name
+            return closest
+        return value
 
     def get_kelvin(self):
         return int(self._scale.get_value())
@@ -243,11 +267,10 @@ class WhiteBalanceRow(Gtk.Box):
         if self._updating:
             return
         kelvin = int(scale.get_value())
+        color_temp_idx = self._preset_names.index(self._color_temp_choice)
         self._updating = True
         self._entry.set_text(str(kelvin))
-        closest = find_closest_wb(kelvin, self._preset_names, self._presets)
-        if closest and closest in self._preset_names:
-            self._combo.set_active(self._preset_names.index(closest))
+        self._combo.set_active(color_temp_idx)
         self._updating = False
 
     def _on_entry_activate(self, entry):
@@ -257,12 +280,11 @@ class WhiteBalanceRow(Gtk.Box):
         except ValueError:
             return
         kelvin = max(self._kelvin_min, min(kelvin, self._kelvin_max))
+        color_temp_idx = self._preset_names.index(self._color_temp_choice)
         self._updating = True
         self._scale.set_value(kelvin)
         self._entry.set_text(str(kelvin))
-        closest = find_closest_wb(kelvin, self._preset_names, self._presets)
-        if closest and closest in self._preset_names:
-            self._combo.set_active(self._preset_names.index(closest))
+        self._combo.set_active(color_temp_idx)
         self._updating = False
 
 

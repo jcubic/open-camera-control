@@ -8,6 +8,7 @@ from opencameracontrol.config import (
     DEFAULT_CONFIG,
     WB_KELVIN,
     find_closest_wb,
+    find_color_temp_choice,
     load_config,
     lookup_wb_kelvin,
 )
@@ -217,3 +218,28 @@ class TestFindClosestWB:
     def test_single_mapped_choice(self):
         choices = ["Auto", "Tungsten"]
         assert find_closest_wb(9000, choices) == "Tungsten"
+
+
+class TestFindColorTempChoice:
+    def test_standard_name(self):
+        choices = ["Auto", "Daylight", "Color Temperature", "Flash"]
+        assert find_color_temp_choice(choices) == "Color Temperature"
+
+    def test_sony_name(self):
+        choices = ["Auto", "Daylight", "Choose Color Temperature", "Flash"]
+        assert find_color_temp_choice(choices) == "Choose Color Temperature"
+
+    def test_case_insensitive(self):
+        choices = ["Auto", "color temperature"]
+        assert find_color_temp_choice(choices) == "color temperature"
+
+    def test_not_present(self):
+        choices = ["Auto", "Daylight", "Cloudy", "Tungsten"]
+        assert find_color_temp_choice(choices) is None
+
+    def test_empty_choices(self):
+        assert find_color_temp_choice([]) is None
+
+    def test_does_not_match_partial(self):
+        choices = ["Auto", "Temperature"]
+        assert find_color_temp_choice(choices) is None

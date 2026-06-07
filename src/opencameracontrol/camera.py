@@ -16,6 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import locale
 import multiprocessing
 import os
 import re
@@ -116,6 +117,8 @@ def _find_child(widget, name):
 
 def _camera_worker(req_q, resp_q, port, config_dir):
     os.environ["LC_ALL"] = "C"
+    os.environ["LANGUAGE"] = "C"
+    locale.setlocale(locale.LC_ALL, "C")
     camera = gp.Camera()
     if port:
         port_info_list = gp.PortInfoList()

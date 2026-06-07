@@ -86,6 +86,13 @@ def lookup_wb_kelvin(name, user_presets=None):
     return None
 
 
+def find_color_temp_choice(choices):
+    for name in choices:
+        if "color" in name.lower() and "temperature" in name.lower():
+            return name
+    return None
+
+
 def find_closest_wb(kelvin, choices, user_presets=None):
     best_name = None
     best_diff = None
